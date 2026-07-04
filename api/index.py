@@ -43,3 +43,7 @@ def chat(request: ChatRequest):
         return {"reply": response.choices[0].message.content}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error calling OpenAI API: {str(e)}")
+
+@app.get("/api/health")
+def root():
+    return {"status": "ok"}
