@@ -1,14 +1,24 @@
-import type { ApiError, ChatResponse } from "./types";
+import type { ApiError, ChatResponse, CoachCharacterId } from "./types";
+
+interface SendChatMessageOptions {
+  message: string;
+  creativity: number;
+  character: CoachCharacterId;
+}
 
 /**
  * Sends a user message to the FastAPI /api/chat endpoint.
  * Uses a relative URL so it works with Next.js dev rewrites and Vercel routing.
  */
-export async function sendChatMessage(message: string): Promise<string> {
+export async function sendChatMessage({
+  message,
+  creativity,
+  character,
+}: SendChatMessageOptions): Promise<string> {
   const response = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({ message, creativity, character }),
   });
 
   if (!response.ok) {

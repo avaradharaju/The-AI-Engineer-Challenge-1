@@ -55,19 +55,35 @@ npm start
 
 ## Deploy to Vercel
 
-From the **project root** (not `frontend/`):
+Deploy from the **repository root** (not the `frontend/` folder). The root `vercel.json` defines two **services** — a Next.js frontend and a FastAPI backend — and routes traffic between them.
 
 ```bash
+cd /path/to/The-AI-Engineer-Challenge   # repo root
 npm install -g vercel
 vercel
 ```
 
-The root `vercel.json` routes:
+### Vercel project settings
 
-- `/api/*` → FastAPI Python serverless function
-- everything else → Next.js frontend
+In the [Vercel dashboard](https://vercel.com/) → your project → **Settings → General**:
 
-Set `OPENAI_API_KEY` in your Vercel project environment variables.
+1. **Root Directory** must be empty (repo root). If it is set to `frontend`, the Python backend will not deploy and `/api/chat` returns **404**.
+2. **Build & Development Settings** can stay at defaults — the `services` block in `vercel.json` controls how each part builds.
+3. Set **`OPENAI_API_KEY`** under **Environment Variables** (Production, Preview, and Development).
+
+After changing settings, trigger a **Redeploy** from the Deployments tab.
+
+### Routing
+
+| Path | Service |
+|------|---------|
+| `/api/*` | FastAPI backend (`api/index.py`) |
+| everything else | Next.js frontend (`frontend/`) |
+
+### Verify after deploy
+
+1. Open `https://your-app.vercel.app/api/health` — expect `{"status":"ok"}`
+2. Open the app and send a chat message
 
 ## Project structure
 
