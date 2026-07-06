@@ -69,7 +69,14 @@ In the [Vercel dashboard](https://vercel.com/) → your project → **Settings �
 
 1. **Root Directory** must be empty (repo root). If it is set to `frontend`, the Python backend will not deploy and `/api/chat` returns **404**.
 2. **Build & Development Settings** can stay at defaults — the `services` block in `vercel.json` controls how each part builds.
-3. Set **`OPENAI_API_KEY`** under **Environment Variables** (Production, Preview, and Development).
+3. Set environment variables under **Settings → Environment Variables** (Production, Preview, and Development):
+
+| Variable | Required | Suggested (public demo) |
+|----------|----------|-------------------------|
+| `OPENAI_API_KEY` | Yes | — |
+| `OPENAI_MODEL` | No | `gpt-4.1-mini` |
+| `OPENAI_MAX_TOKENS` | No | `500` |
+| `OPENAI_MAX_MESSAGE_CHARS` | No | `2000` |
 
 After changing settings, trigger a **Redeploy** from the Deployments tab.
 

@@ -15,10 +15,13 @@ export interface ChatMessage {
   id: string;
   role: MessageRole;
   content: string;
+  /** Model generation time in milliseconds (assistant messages only). */
+  responseTimeMs?: number;
 }
 
 export interface ChatResponse {
   reply: string;
+  response_time_ms?: number;
 }
 
 export interface ApiError {

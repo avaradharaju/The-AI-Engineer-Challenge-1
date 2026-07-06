@@ -28,11 +28,16 @@ const WELCOME_MESSAGE: ChatMessage = {
     "Hi there — I'm your mindful coach. Whether you're dealing with stress, building habits, or need a confidence boost, I'm here to listen. What's on your mind today?",
 };
 
-function createMessage(role: ChatMessage["role"], content: string): ChatMessage {
+function createMessage(
+  role: ChatMessage["role"],
+  content: string,
+  responseTimeMs?: number,
+): ChatMessage {
   return {
     id: crypto.randomUUID(),
     role,
     content,
+    ...(responseTimeMs !== undefined && { responseTimeMs }),
   };
 }
 
@@ -86,13 +91,16 @@ export function Chat() {
     setError(null);
 
     try {
-      const reply = await sendChatMessage({
+      const { reply, responseTimeMs } = await sendChatMessage({
         message: trimmed,
         creativity,
         character,
         signal: controller.signal,
       });
-      setMessages((prev) => [...prev, createMessage("assistant", reply)]);
+      setMessages((prev) => [
+        ...prev,
+        createMessage("assistant", reply, responseTimeMs),
+      ]);
     } catch (err) {
       if (isAbortError(err)) {
         return;

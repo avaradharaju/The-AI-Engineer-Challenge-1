@@ -23,7 +23,7 @@ export async function sendChatMessage({
   creativity,
   character,
   signal,
-}: SendChatMessageOptions): Promise<string> {
+}: SendChatMessageOptions): Promise<{ reply: string; responseTimeMs?: number }> {
   let response: Response;
 
   try {
@@ -54,7 +54,12 @@ export async function sendChatMessage({
   }
 
   const data = (await response.json()) as ChatResponse;
-  return data.reply;
+  return {
+    reply: data.reply,
+    ...(data.response_time_ms !== undefined && {
+      responseTimeMs: data.response_time_ms,
+    }),
+  };
 }
 
 export { ChatApiError, friendlyMessageForUnknownError, isAbortError };

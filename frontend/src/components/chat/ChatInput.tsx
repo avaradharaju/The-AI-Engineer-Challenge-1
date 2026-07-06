@@ -1,5 +1,6 @@
 "use client";
 
+import { MAX_MESSAGE_CHARS } from "@/lib/limits";
 import { FormEvent, KeyboardEvent, useRef, useState } from "react";
 
 interface ChatInputProps {
@@ -66,6 +67,7 @@ export function ChatInput({
           ref={textareaRef}
           rows={1}
           value={input}
+          maxLength={MAX_MESSAGE_CHARS}
           onChange={(event) => setInput(event.target.value)}
           onInput={handleInput}
           onKeyDown={handleKeyDown}

@@ -4,8 +4,14 @@ from pydantic import BaseModel, Field
 from openai import OpenAI
 from typing import Literal
 import os
+import time
 from dotenv import load_dotenv
 
+from .config import (
+    max_message_chars,
+    openai_completion_limit_kwargs,
+    openai_model,
+)
 from .errors import MSG_MISSING_KEY, user_message_for_openai_error
 from .prompts.characters import DEFAULT_CHARACTER, VALID_CHARACTERS
 from .prompts.system import build_system_prompt
@@ -29,7 +35,12 @@ DEFAULT_CREATIVITY = 50
 CharacterId = Literal["professional", "warm_friend", "mindful_guide", "motivational_coach"]
 
 class ChatRequest(BaseModel):
-    message: str
+    message: str = Field(
+        ...,
+        min_length=1,
+        max_length=max_message_chars(),
+        description="User message to the coach.",
+    )
     creativity: int = Field(
         default=DEFAULT_CREATIVITY,
         ge=0,
@@ -62,20 +73,23 @@ def chat(request: ChatRequest):
             character=request.character,
             creativity=request.creativity,
         )
+        start = time.perf_counter()
         response = client.chat.completions.create(
-            model="gpt-5",
+            model=openai_model(),
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message}
             ],
+            **openai_completion_limit_kwargs(),
         )
+        response_time_ms = round((time.perf_counter() - start) * 1000)
         content = response.choices[0].message.content
         if not content:
             raise HTTPException(
                 status_code=500,
                 detail="The coach couldn't generate a reply. Please try again.",
             )
-        return {"reply": content}
+        return {"reply": content, "response_time_ms": response_time_ms}
     except HTTPException:
         raise
     except ValueError as e:

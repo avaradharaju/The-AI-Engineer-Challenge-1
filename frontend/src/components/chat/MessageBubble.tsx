@@ -1,3 +1,4 @@
+import { formatResponseTime } from "@/lib/responseTime";
 import type { ChatMessage } from "@/lib/types";
 
 interface MessageBubbleProps {
@@ -17,9 +18,17 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         }`}
       >
         {!isUser && (
-          <span className="mb-1 block text-xs font-medium text-accent">
-            Coach
-          </span>
+          <div className="mb-1 flex items-baseline justify-between gap-3">
+            <span className="text-xs font-medium text-accent">Coach</span>
+            {message.responseTimeMs !== undefined && (
+              <span
+                className="text-[11px] tabular-nums text-muted"
+                title="Model generation time"
+              >
+                {formatResponseTime(message.responseTimeMs)}
+              </span>
+            )}
+          </div>
         )}
         {message.content}
       </div>
