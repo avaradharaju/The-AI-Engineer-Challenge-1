@@ -1030,16 +1030,18 @@ Based on the vibe check, improvements made and results:
 
 ---
 
-## 📦 Submission Instructions
+## 📦 Submission
 
-1. Complete this section directly in your README
-2. Commit and push your changes to GitHub
-3. Share your **repo link + deployed Vercel app**
+| | Link |
+|---|---|
+| **Fork** | https://github.com/avaradharaju/The-AI-Engineer-Challenge-1 |
+| **Pull request** | https://github.com/AI-Maker-Space/The-AI-Engineer-Challenge/pull/96 |
+| **Live app** | https://ai-engineering-challenge-kohl.vercel.app |
+| **Health check** | https://ai-engineering-challenge-kohl.vercel.app/api/health |
 
+**Branch:** `feat/build-ui`
 
-
-
-
+**App:** Mindful Coach — AI mental wellness coaching with four personas, creativity control, and a Next.js + FastAPI stack deployed on Vercel.
 
 
 
