@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { sendChatMessage } from "@/lib/api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { sendChatMessage, friendlyMessageForUnknownError, isAbortError } from "@/lib/api";
 import {
   CHARACTER_STORAGE_KEY,
   DEFAULT_CHARACTER,
@@ -15,6 +15,7 @@ import {
 } from "@/lib/creativity";
 import type { ChatMessage } from "@/lib/types";
 import { CharacterSelect } from "./CharacterSelect";
+import { ChatErrorBanner } from "./ChatErrorBanner";
 import { ChatHeader } from "./ChatHeader";
 import { ChatInput } from "./ChatInput";
 import { CreativityControl } from "./CreativityControl";
@@ -41,10 +42,17 @@ export function Chat() {
   const [error, setError] = useState<string | null>(null);
   const [creativity, setCreativity] = useState(DEFAULT_CREATIVITY);
   const [character, setCharacter] = useState<CoachCharacterId>(DEFAULT_CHARACTER);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     setCreativity(readStoredCreativity());
     setCharacter(readStoredCharacter());
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
   }, []);
 
   const handleCreativityChange = useCallback((value: number) => {
@@ -57,9 +65,20 @@ export function Chat() {
     localStorage.setItem(CHARACTER_STORAGE_KEY, value);
   }, []);
 
+  const handleCancel = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setIsLoading(false);
+  }, []);
+
   const handleSend = useCallback(async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || isLoading) return;
+
+    abortControllerRef.current?.abort();
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     const userMessage = createMessage("user", trimmed);
     setMessages((prev) => [...prev, userMessage]);
@@ -67,13 +86,25 @@ export function Chat() {
     setError(null);
 
     try {
-      const reply = await sendChatMessage({ message: trimmed, creativity, character });
+      const reply = await sendChatMessage({
+        message: trimmed,
+        creativity,
+        character,
+        signal: controller.signal,
+      });
       setMessages((prev) => [...prev, createMessage("assistant", reply)]);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Something went wrong. Please try again.";
-      setError(message);
+      if (isAbortError(err)) {
+        return;
+      }
+      const message = friendlyMessageForUnknownError(err);
+      if (message) {
+        setError(message);
+      }
     } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
       setIsLoading(false);
     }
   }, [character, creativity, isLoading]);
@@ -86,14 +117,13 @@ export function Chat() {
       <ChatHeader />
       <MessageList messages={messages} isLoading={isLoading} />
       {error && (
-        <div
-          role="alert"
-          className="mx-4 mb-2 rounded-lg border border-error/30 bg-error/10 px-4 py-2 text-sm text-error"
-        >
-          {error}
-        </div>
+        <ChatErrorBanner message={error} onDismiss={() => setError(null)} />
       )}
-      <ChatInput onSend={handleSend} disabled={isLoading} />
+      <ChatInput
+        onSend={handleSend}
+        onCancel={handleCancel}
+        isLoading={isLoading}
+      />
       <CharacterSelect
         value={character}
         onChange={handleCharacterChange}

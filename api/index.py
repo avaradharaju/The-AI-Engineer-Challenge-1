@@ -6,6 +6,7 @@ from typing import Literal
 import os
 from dotenv import load_dotenv
 
+from .errors import MSG_MISSING_KEY, user_message_for_openai_error
 from .prompts.characters import DEFAULT_CHARACTER, VALID_CHARACTERS
 from .prompts.system import build_system_prompt
 
@@ -47,10 +48,13 @@ def root():
 @app.post("/api/chat")
 def chat(request: ChatRequest):
     if not os.getenv("OPENAI_API_KEY"):
-        raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
+        raise HTTPException(status_code=503, detail=MSG_MISSING_KEY)
 
     if request.character not in VALID_CHARACTERS:
-        raise HTTPException(status_code=400, detail=f"Invalid character: {request.character}")
+        raise HTTPException(
+            status_code=400,
+            detail="That coach style isn't available. Please choose another one.",
+        )
     
     try:
         user_message = request.message
@@ -65,11 +69,20 @@ def chat(request: ChatRequest):
                 {"role": "user", "content": user_message}
             ],
         )
-        return {"reply": response.choices[0].message.content}
+        content = response.choices[0].message.content
+        if not content:
+            raise HTTPException(
+                status_code=500,
+                detail="The coach couldn't generate a reply. Please try again.",
+            )
+        return {"reply": content}
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error calling OpenAI API: {str(e)}")
+        status_code, detail = user_message_for_openai_error(e)
+        raise HTTPException(status_code=status_code, detail=detail)
 
 @app.get("/api/health")
 def health():

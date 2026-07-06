@@ -1,9 +1,17 @@
-import type { ApiError, ChatResponse, CoachCharacterId } from "./types";
+import {
+  ChatApiError,
+  friendlyMessageForStatus,
+  friendlyMessageForUnknownError,
+  isAbortError,
+  parseApiDetail,
+} from "./errors";
+import type { ChatResponse, CoachCharacterId } from "./types";
 
 interface SendChatMessageOptions {
   message: string;
   creativity: number;
   character: CoachCharacterId;
+  signal?: AbortSignal;
 }
 
 /**
@@ -14,28 +22,39 @@ export async function sendChatMessage({
   message,
   creativity,
   character,
+  signal,
 }: SendChatMessageOptions): Promise<string> {
-  const response = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, creativity, character }),
-  });
+  let response: Response;
+
+  try {
+    response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, creativity, character }),
+      signal,
+    });
+  } catch (error) {
+    if (isAbortError(error)) {
+      throw error;
+    }
+    throw new ChatApiError(0, friendlyMessageForUnknownError(error));
+  }
 
   if (!response.ok) {
-    let errorMessage = `Request failed (${response.status})`;
+    let serverDetail: string | null = null;
 
     try {
-      const errorBody = (await response.json()) as ApiError;
-      if (errorBody.detail) {
-        errorMessage = errorBody.detail;
-      }
+      serverDetail = parseApiDetail(await response.json());
     } catch {
-      // Keep the generic message if the body is not JSON.
+      // Response body may not be JSON — use status-based fallback below.
     }
 
-    throw new Error(errorMessage);
+    const userMessage = friendlyMessageForStatus(response.status, serverDetail);
+    throw new ChatApiError(response.status, userMessage, serverDetail ?? undefined);
   }
 
   const data = (await response.json()) as ChatResponse;
   return data.reply;
 }
+
+export { ChatApiError, friendlyMessageForUnknownError, isAbortError };
